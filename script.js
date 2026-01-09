@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Enter") sendMessage();
   });
 
-  async function sendMessage() {
+ async function sendMessage() {
     const message = messageInput.value.trim();
     if (!message) return;
 
@@ -41,4 +41,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
-a
+/* ========== VOICE INPUT ========== */
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (SpeechRecognition) {
+  const recognition = new SpeechRecognition();
+  recognition.lang = "en-US";
+
+  micBtn.onclick = () => recognition.start();
+
+  recognition.onresult = e => {
+    const text = e.results[0][0].transcript;
+    sendMessage(text);
+  };
+} else {
+  micBtn.style.display = "none";
+}
+
+/* ========== VOICE OUTPUT ========== */
+function speak(text) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-US";
+  speechSynthesis.speak(utterance);
+}
