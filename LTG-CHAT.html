@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LTG-CHAT</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background: #0f0f0f;
+  color: #e5e5e5;
+  height: 100vh;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  background: #171717;
+  padding: 14px;
+}
+
+.sidebar h2 {
+  margin-bottom: 10px;
+}
+
+.sidebar button {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  background: #10a37f;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Main */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  padding: 14px;
+  border-bottom: 1px solid #2a2a2a;
+  font-weight: bold;
+}
+
+/* Messages */
+.messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+/* Message row */
+.row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  background: #444;
+}
+
+.bot { background: #10a37f; color: black; }
+.user { background: #2563eb; }
+
+.bubble {
+  background: #1f1f1f;
+  padding: 12px;
+  border-radius: 8px;
+  max-width: 600px;
+  line-height: 1.5;
+}
+
+/* Input */
+.input {
+  padding: 12px;
+  border-top: 1px solid #2a2a2a;
+  display: flex;
+  gap: 8px;
+}
+
+.input input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 6px;
+  border: none;
+  background: #2a2a2a;
+  color: white;
+}
+
+.input button {
+  padding: 0 14px;
+  border-radius: 6px;
+  border: none;
+  background: #10a37f;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .sidebar { display: none; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <h2>LTG-CHAT</h2>
+    <button onclick="clearChat()">New Chat</button>
+  </div>
+
+  <div class="main">
+    <div class="header">LTG-CHAT (AI)</div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input">
+      <button onclick="startVoice()">🎤</button>
+      <input id="userInput" type="text" placeholder="Send a message..." />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const messagesDiv = document.getElementById("messages");
+
+/* Load saved chat */
+window.onload = () => {
+  const saved = JSON.parse(localStorage.getItem("ltg_chat") || "[]");
+  saved.forEach(m => addMessage(m.text, m.sender, false));
+  if (saved.length === 0) {
+    addMessage("Hello 👋 I am LTG-CHAT. Ask me anything.", "bot");
+  }
+};
+
+function saveChat() {
+  const rows = document.querySelectorAll(".row");
+  const data = [];
+  rows.forEach(r => {
+    const sender = r.querySelector(".avatar").classList.contains("bot") ? "bot" : "user";
+    const text = r.querySelector(".bubble").textContent;
+    data.push({ sender, text });
+  });
+  localStorage.setItem("ltg_chat", JSON.stringify(data));
+}
+
+function clearChat() {
+  localStorage.removeItem("ltg_chat");
+  messagesDiv.innerHTML = "";
+  addMessage("New chat started 👋", "bot");
+}
+
+function sendMessage() {
+  const input = document.getElementById("userInput");
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage(text, "user");
+  input.value = "";
+
+  setTimeout(() => {
+    const reply = smartReply(text);
+    addMessage(reply, "bot");
+  }, 600);
+}
+
+function addMessage(text, sender, save = true) {
+  const row = document.createElement("div");
+  row.className = "row";
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar " + sender;
+  avatar.textContent = sender === "bot" ? "AI" : "U";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = text;
+
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  messagesDiv.appendChild(row);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  if (save) saveChat();
+}
+
+/* SMART LOGIC */
+function smartReply(text) {
+  const t = text.toLowerCase();
+
+  if (t.includes("hello") || t.includes("hi"))
+    return "Hello 😊 How can I help you?";
+
+  if (t.includes("your name"))
+    return "I am LTG-CHAT 🤖";
+
+  if (t.includes("who made you"))
+    return "I was built using HTML, CSS, and JavaScript.";
+
+  if (t.includes("how"))
+    return "Most things work step by step. Start simple, then improve.";
+
+  if (t.includes("why"))
+    return "There can be many reasons. Context is important.";
+
+  if (t.includes("what"))
+    return "That refers to something important. I can explain it more if you want.";
+
+  return "That’s an interesting question 🤔 I may not know everything yet, but I’ll always try to help.";
+}
+
+
+/* VOICE INPUT */
+function startVoice() {
+  if (!("webkitSpeechRecognition" in window)) {
+    alert("Voice input not supported on this browser");
+    return;
+  }
+
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = "en-US";
+  recognition.onresult = e => {
+    document.getElementById("userInput").value = e.results[0][0].transcript;
+  };
+  recognition.start();
+}
+
+/* REAL AI READY (future)
+async function realAI(prompt) {
+  const res = await fetch("API_URL", {
+    method: "POST",
+    headers: { "Authorization": "Bearer YOUR_KEY" },
+    body: JSON.stringify({ prompt })
+  });
+  const data = await res.json();
+  return data.reply;
+}
+*/
+
+const chatBox = document.getElementById("chat-box");
+const input = document.getElementById("user-input");
+const sendBtn = document.getElementById("send-btn");
+
+sendBtn.onclick = sendMessage;
+
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
+
+function addMessage(text, type) {
+  const msg = document.createElement("div");
+  msg.className = type;
+  msg.innerText = text;
+  chatBox.appendChild(msg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage(text, "user");
+  input.value = "";
+
+  addMessage("Typing...", "bot");
+
+  const reply = await smartReply(text);
+  chatBox.lastChild.innerText = reply;
+}
+
+async function smartReply(text) {
+  try {
+    const res = await fetch("https://ltg-chat-backend.onrender.com/chat",...
+     {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text })
+    });
+
+    const data = await res.json();
+    return data.reply;
+  } catch {
+    return "⚠️ Backend not responding";
+  }
+}
+
+
+</script>
+
+</body>
+</html>
